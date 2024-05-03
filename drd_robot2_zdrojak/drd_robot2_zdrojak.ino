@@ -1,4 +1,4 @@
-//
+//To ze je to nakokot jeste neznamena ze tenhle kod neudela zapocet...
 #include <NewPing.h>
 #include <Servo.h>
 
