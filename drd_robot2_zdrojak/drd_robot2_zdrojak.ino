@@ -134,96 +134,20 @@ void vypoctiPID() { //PID regulace
 
 void lomCara () { //krizovatky do prava
   //osetrena prava lomena cara 
- 
-}
-
-
-void loop() {
- spocti_PD();
-  digitalWrite(pTrig, LOW);
-  delayMicroseconds(2);
-  digitalWrite(pTrig, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(pTrig, LOW);
-  odezva = pulseIn(pEcho, HIGH);  // maximální délku pulzu v mikrosekundách (us)
-  vzdalenost = int(odezva / 58.31);    // přepočet na cm
-  
-  Serial.print(vzdalenost);
-  Serial.println(" cm");
-  
-  if (vzdalenost <= 20) {
-    motorStop();
-  } else {
-    while (analogRead(A0) < 200) {
-      motorRight();
-    }
-    while (analogRead(A1) < 200) {
-      motorLeft();
-    }
+ if ((cNorm[3] > 80) and (cNorm[O] < 50)) {
+  motory(vMax);
+  //delay(250)
+  while (cNorm[0] < 50) nactiCidla();
+  motory(-vMax);
+  while (cNorm[1] < 50) nactiCidla();
  }
-  digitalWrite(mLv, 240);
-  analogWrite(mLs, LOW);
-  digitalWrite(mPv, 120);
-  analogWrite(mPs, LOW);*/
-}
-void spocti_PD()
-{
-  int sA0 = analogRead(A0);
-  int sA1 = analogRead(A1);
-  int sA2 = analogRead(A2);
-  int sA3 = analogRead(A3);
-  
-  
-  int err_x = (sA3*(-2)) + (sA2*(-1)) + (sA1)+ (sA0*2);
-  int err_sum  = sA0 + sA1 + sA2 + sA3;
-  err = (1.0 * err_x) / (1.0 * err_sum);
-  
-  float P_fix = err * P;
-  der = err - last_err;
-  last_err = err;
-
-  float korek = P_fix + (D*der);
-
-  mL = v + korek;
-  if (mL <0) mL = 0; 
-  if (mL >v) mL = v; 
- 
-  mP = v - korek;
-
-  if (mP < 0) mP = 0; 
-  if (mP > v) mP = v; 
-
-  digitalWrite(mLv,LOW);
-  analogWrite(mLs, mL);
-  digitalWrite(mPv, LOW);
-  analogWrite(mPs, mP);
-  /*
-  Serial.println(sA0);
-  Serial.println(sA1);
-  Serial.println(sA2);
-  Serial.println(sA3);
-  delay(250);*/
-  }
-
-void motorLeft() {
-  digitalWrite(mLv, LOW);
-  digitalWrite(mLs, 0);
-  digitalWrite(mPv, 200);
-  digitalWrite(mPs, LOW);
-}
-
-void motorRight() {
-  digitalWrite(mLv, 200);
-  digitalWrite(mLs, LOW);
-  digitalWrite(mPv, LOW);
-  digitalWrite(mPs, 0);
-}
-
-void motorStop() {
-  digitalWrite(mLv, LOW);
-  digitalWrite(mLs, LOW);
-  digitalWrite(mPv, LOW);
-  digitalWrite(mPs, LOW);
+ //osetrena leva lomena cara
+  if ((cNorm[0] > 80) and (cNorm[3] < 50)) {
+  motory(-vMax);
+  while (cNorm[3] < 50) nactiCidla();
+  motory(vvMax);
+  while (cNorm[2] < 50) nactiCidla();
+ }
 }
 
 int vzdalenost() {
@@ -235,12 +159,55 @@ int vzdalenost() {
   digitalWrite(pTrig, HIGH);
   delayMicroseconds(5);
   digitalWrite(pTrig, LOW);
-  odezva = pulseIn)pEcho, HIGH, 5000); //jak dlouho cekam v mikros
-  vzd = int(odezva/58.31); //prepocitam na vzdalenost v cm
+  odezva = pulseIn(pEcho, HIGH, 7000); //jak dlouho cekam v mikros
+  vzd = int(odezva / 58.31); //prepocitam na vzdalenost v cm
   return vzd;
 }
 
+void objed() {
+  myservo.attach(9);
+  myservo.write(150);
+  delay(20);
+  myservo.detach();
+  //vpravo 90 stupnu
+  motory(v0);
+  delay(500); //lepsi mirne pretocit 90 stupnu
+  //regulace podle vzdalenosti
+  while (cNorm[2] < 50) {
+    nactiCidla();
+    pom = vzdalenost();
+    // 1 č. P-reg.
+    if ((pom < 1)or(pom>30)) pom = 30;
+    kor = int(Pp * (pom - 20));
+    motory(kor);
+    // 1 č. 2-st. reg
+    //if ((pom <1)or(pom>30)) {
+    //  motory(-v0);
+    //}
+    //else {
+    //  motory(v0);
+    //}
+  }
+  myservo.attach(9);
+  myservo.write(90);
+  delay(20);
+  myservo.detach();
 
-void nacticidla - if cnorm dela orezy - pokud je bila belejsi, nebo cerna cernejsi
+  //vpravo 90
+  motory(v0);
+  delay(500);
+}
 
-lomena cara 
+
+void loop() {
+  pom = vzdalenost();
+  if ((pom > 15) or (pom < 1)) {
+    nactiCidla();
+    lomCara();
+    vypoctiErr();
+    vypoctiPID();
+    motory(kor);
+  } else {
+    ovjed();
+  }
+}
