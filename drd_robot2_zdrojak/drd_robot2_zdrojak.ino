@@ -1,13 +1,10 @@
-//To ze je to nakokot jeste neznamena ze tenhle kod neudela zapocet...
+//Nejdrive si nainstaluj knihovnu myping a servo... Menu -> Nastroje -> Manage libraries, vyhledej a dej nainstlovat.
 #include <NewPing.h>
-
-
-
-
-
 #include <Servo.h>
 
-Servo myServo;
+Servo myServo; //vytvoreni objektu my.servo
+
+//definice promennych (integery a desetinne floaty)
 
 int cMin[4];
 int cMax[4];
@@ -33,7 +30,7 @@ int v0 = 180; //maximalni rychlost k jezdeni
 int vMax = 200;
 
 
-void setup() {
+void setup() { //tento kod se spusti pri zapnuti robota, pote pokracuje az loop (dole)
   Serial.begin(9600);
 
   pinMode(mLs, OUTPUT); //inicializace pinů
@@ -54,7 +51,7 @@ void setup() {
   }
   delay(5000); //po startu čeká
 
-  //roztočení tobota a načítání max/min hodnot po dobu 5s
+  //roztočení robota a načítání max/min hodnot po dobu 5s
 
   digitalWrite(mLs, LOW); //směrový pin LOW => dopředu, HIGH => dozadu
   digitalWrite(mPs, HIGH);
@@ -63,15 +60,14 @@ void setup() {
   
   long t0 = millis();
   while ((millis() - t0) < 5000) { //čas v milisekundách
-    for (int i = O; i < 4; i++){
+    for (int i = 0; i < 4; i++){
       int pom = analogRead(cPin[i]);
       if (pom < cMin[i]) cMin[i] = pom;
       if (pom > cMax[i]) cMax[i] = pom; 
     }
   }
 
-  while (analogRead(cPin[3]) < 500)
-    ; // WHAT THE FUCK
+  while (analogRead(cPin[3]) < 500);
 
   digitalWrite(mLs, LOW);
   digitalWrite(mPs, LOW);
@@ -91,13 +87,13 @@ void nactiCidla() { //nacteni hodnot z cidel a jejich normalizace
 }
 
 void vypoctiErr() {
-  long sumErrVaha = O;
+  long sumErrVaha = 0;
   long sumErr = 1;
   for (int i = 0; i < 4; i++) {
     sumErrVaha = sumErrVaha + (cNorm[i] * vahy[i]);
     sumErr = sumErr + cNorm[i];
   }
-  Err = (float(sumErrVaha) / float(sumErr))
+  Err = (float(sumErrVaha) / float(sumErr));
 }
 
 void motory(int korL) {
@@ -114,14 +110,14 @@ void motory(int korL) {
     analogWrite(mLv, (255 + mL)); //mL < 0 => 255+mL
   } else {
     digitalWrite(mLs, LOW);
-    analogWrite(mLv, mL));
+    analogWrite(mLv, mL);
   }
   if (mP < 0) {
     digitalWrite(mPs, HIGH);
     analogWrite(mPv, (255 + mP)); //mL < 0 => 255+mL
   } else {
     digitalWrite(mPs, LOW);
-    analogWrite(mPv, mP));
+    analogWrite(mPv, mP);
   }
 }
 
@@ -134,7 +130,7 @@ void vypoctiPID() { //PID regulace
 
 void lomCara () { //krizovatky do prava
   //osetrena prava lomena cara 
- if ((cNorm[3] > 80) and (cNorm[O] < 50)) {
+ if ((cNorm[3] > 80) and (cNorm[0] < 50)) {
   motory(vMax);
   //delay(250)
   while (cNorm[0] < 50) nactiCidla();
@@ -145,7 +141,7 @@ void lomCara () { //krizovatky do prava
   if ((cNorm[0] > 80) and (cNorm[3] < 50)) {
   motory(-vMax);
   while (cNorm[3] < 50) nactiCidla();
-  motory(vvMax);
+  motory(vMax);
   while (cNorm[2] < 50) nactiCidla();
  }
 }
@@ -165,10 +161,10 @@ int vzdalenost() {
 }
 
 void objed() {
-  myservo.attach(9);
-  myservo.write(150);
+  myServo.attach(9);
+  myServo.write(150);
   delay(20);
-  myservo.detach();
+  myServo.detach();
   //vpravo 90 stupnu
   motory(v0);
   delay(500); //lepsi mirne pretocit 90 stupnu
@@ -188,26 +184,26 @@ void objed() {
     //  motory(v0);
     //}
   }
-  myservo.attach(9);
-  myservo.write(90);
+  myServo.attach(9);
+  myServo.write(90);
   delay(20);
-  myservo.detach();
+  myServo.detach();
 
   //vpravo 90
   motory(v0);
   delay(500);
 }
 
-
+//tento kod se opakuje do nekonecna, kazdou iteraci se volaji jednotlive funkce
 void loop() {
-  pom = vzdalenost();
+  pom = vzdalenost(); //pokud je vzdalenost vetsi nez 15, nebo mensi nez 1, provede se if, v opacnem pripade se vola funkce objed prekazku
   if ((pom > 15) or (pom < 1)) {
     nactiCidla();
     lomCara();
     vypoctiErr();
     vypoctiPID();
-    motory(kor);
+    motory(kor); //jedina funkce, kde se posila promenna kor, na zaklade ktere robot uzpusobuje rychlost motoru
   } else {
-    ovjed();
+    objed();
   }
 }
